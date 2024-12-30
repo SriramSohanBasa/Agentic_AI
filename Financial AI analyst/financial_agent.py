@@ -1,48 +1,44 @@
 from phi.agent import Agent
 from phi.model.groq import Groq
-from phi.tools.yfinance import YFinanceTools
 from phi.tools.duckduckgo import DuckDuckGo
+from phi.tools.yfinance import YFinanceTools
 
-## Web search agent
+from dotenv import load_dotenv
+
+load_dotenv()
+
 web_search_agent = Agent(
-    name="Web Search Agent",
-    role="Search the web for the information",
-    model=Groq(id="llama3-groq-70b-8192-tool-use-preview"),
-    tools=[DuckDuckGo()],
-    instructions=["Always include sources"],
-    show_tools_calls=True,
-    markdown=True
+    name = "Web Agent",
+    description = "This is the agent for searching content from the web",
+    model = Groq(id="llama-3.3-70b-versatile"),
+    tools  = [DuckDuckGo()],
+    instructions = "Always include the sources",
+    show_tool_calls = True,
+    markdown = True,
+    debug_mode=True
 )
 
-## Financial agent
+#web_search_agent.print_response("What is the capital of Nepal?", stream=True)
+
 finance_agent = Agent(
-    name="Finance AI Agent",
-    model=Groq(id="llama3-groq-70b-8192-tool-use-preview"),
-    tools=[
-        YFinanceTools(
-            stock_price=True, 
-            analyst_recommendations=True, 
-            stock_fundamentals=True,
-            company_news=True
-        )
-    ],
-    instructions=["Use tables to display the data"],
+    name="Finance Agent",
+    description = "Your task is to find the finance information",
+    model = Groq(id="llama-3.3-70b-versatile"),
+    tools=[YFinanceTools(stock_price=True, analyst_recommendations=True, company_info=True, company_news=True)],
+    instructions=["Use tables to display data"],
     show_tool_calls=True,
-    markdown=True
+    markdown=True,
+    debug_mode = True
 )
+#finance_agent.print_response("Summarize analyst recommendations for NVDA", stream=True)
 
-## Multi AI agent
-multi_ai_agent = Agent(
+agent_team = Agent(
     team=[web_search_agent, finance_agent],
-    model=Groq(id="llama3-groq-70b-8192-tool-use-preview"),
-    instructions=["Always include sources", "Use table to display the data"],
+    model = Groq(id="llama-3.3-70b-versatile"),
+    instructions=["Always include sources", "Use tables to display data"],
     show_tool_calls=True,
-    markdown=True
+    markdown=True,
+    debug_mode =True
 )
 
-# Print the response in the terminal
-multi_ai_agent.print_response(
-    "can you tell me fundamentels of NVDA stock",
-    stream=True
-)
-
+agent_team.print_response("Summarize analyst recommendations and share the latest news for NVDA", stream=True)
