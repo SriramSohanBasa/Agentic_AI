@@ -40,11 +40,38 @@ async def handle_text_message(decoded, twilio_ws, sts_ws, streamsid):
 
 # Sends audio from the audio_queue to the Deepgram WebSocket.
 async def sts_sender(sts_ws, audio_queue):
-    pass
+    print("sts_sender started")
+    while True:
+        chunk = await audio_queue.get()
+        await sts_ws.send(chunk) ##sending from twilio to deepgram
+
+
+
 
 # Receives messages (like audio) from Deepgram and forwards them to Twilio.
 async def sts_receiver(sts_ws, twilio_ws, streamsid_queue):
-    pass
+    print("sts_receiver started")
+    streamsid = await streamsid_queue.get()
+
+    async for message in sts_ws:
+        ##loading data from deepgram. consists of new resposne text/speech
+        if type(message) is str:
+            print(message)
+            decoded = json.loads(message)
+            await handle_text_message(decoded, twilio_ws, sts_ws, streamsid)
+            continue
+
+        raw_mulaw = message
+  
+            ##once we get bytes/audio from deepgram, we've to send to twilio
+        media_message = {
+            "event" : "media",
+            "streamSid": streamsid,
+            'media': {"payload": base64.b64encode(raw_mulaw).decode("ascii")}
+        }
+
+        await twilio_ws.send(json.dumps(media_message))
+
 
 # Receives audio from Twilio and puts it into the audio_queue.
 async def twilio_receiver(twilio_ws, audio_queue, streamsid_queue):
@@ -70,7 +97,7 @@ async def twilio_receiver(twilio_ws, audio_queue, streamsid_queue):
                 break
 
             while len(inbuffer) >= BUFFER_SIZE:
-                chunk = inbuffer[:BUFFER_SIZE]
+                chunk = inbuffer[:BUFFER_SIZE] ##not to send the audio immediately, but send it periodical
                 audio_queue.put_nowait(chunk)
                 inbuffer = inbuffer[BUFFER_SIZE:]
 
