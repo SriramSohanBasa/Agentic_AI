@@ -32,11 +32,18 @@ def load_config():
 
 # Handles user interruptions (barge-in events) from Twilio.
 async def handle_barge_in(decoded, twilio_ws, streamsid):
-    pass
+    if decoded["type"] == "UserStartedSpeaking":
+        clear_message = {
+            "event": "clear",
+            "streamSid": streamsid
+        }
+        await twilio_ws.send(json.dumps(clear_message))
 
 # Processes transcribed text from Deepgram and sends AI responses back to Twilio.
 async def handle_text_message(decoded, twilio_ws, sts_ws, streamsid):
-    pass
+    await handle_barge_in(decoded, twilio_ws, streamsid)
+
+    #TODO: handle function calling
 
 # Sends audio from the audio_queue to the Deepgram WebSocket.
 async def sts_sender(sts_ws, audio_queue):
